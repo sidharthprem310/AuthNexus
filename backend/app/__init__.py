@@ -20,9 +20,13 @@ def create_app(config_class=Config):
     app = Flask(__name__, static_url_path='/')
     app.config.from_object(config_class)
 
-    @app.errorhandler(404)
-    def not_found(e):
-        # SPA Catch-all: If route doesn't exist (and isn't an API), serve index.html
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        import os
+        # Normalize path to prevent directory traversal and handle slashes
+        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+            return app.send_static_file(path)
         return app.send_static_file('index.html')
 
     db.init_app(app)
