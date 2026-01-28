@@ -237,3 +237,57 @@ def verify_email_otp():
         return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200
         
     return jsonify({'error': 'Invalid OTP'}), 400
+
+@bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+    user = User.query.filter_by(email=email).first()
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return jsonify({'message': 'If an account exists, a reset link has been sent.'}), 200
+    
+    from flask_jwt_extended import create_access_token
+    from datetime import timedelta
+    
+    # Create reset token (expires in 15 mins)
+    reset_token = create_access_token(identity=user.id, additional_claims={'type': 'reset'}, expires_delta=timedelta(minutes=15))
+    
+    # Construct reset link (Client-side route)
+    # Using request.host_url implies backend URL, but we need Frontend URL.
+    # In Monolith mode, they are the same.
+    reset_link = f"{request.host_url.rstrip('/')}/create-password?token={reset_token}" 
+
+    # Simulate Email Sending
+    print(f"========================================")
+    print(f"PASSWORD RESET LINK for {email}: {reset_link}")
+    print(f"========================================")
+    
+    return jsonify({'message': 'If an account exists, a reset link has been sent.'}), 200
+
+@bp.route('/reset-password', methods=['POST'])
+@jwt_required()
+def reset_password():
+    from flask_jwt_extended import get_jwt, get_jwt_identity
+    
+    claims = get_jwt()
+    if claims.get('type') != 'reset':
+         return jsonify({'error': 'Invalid token type for password reset'}), 400
+         
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    data = request.get_json()
+    new_password = data.get('password')
+    
+    if not new_password:
+        return jsonify({'error': 'Password required'}), 400
+        
+    user.set_password(new_password)
+    # Clear lockout counters if any
+    user.failed_login_attempts = 0
+    user.is_locked = False
+    db.session.commit()
+    
+    return jsonify({'message': 'Password updated successfully'}), 200
