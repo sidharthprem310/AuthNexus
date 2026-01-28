@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: authnexus-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=production-secret-key-change-this
+      - DATABASE_URL=sqlite:///authnexus.db
+    volumes:
+      - ./backend/instance:/app/instance
+    networks:
+      - authnexus-network
+
+  frontend:
+    build: ./frontend
+    container_name: authnexus-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - authnexus-network
+
+networks:
+  authnexus-network:
+    driver: bridge
