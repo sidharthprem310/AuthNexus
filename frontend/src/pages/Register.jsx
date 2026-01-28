@@ -17,7 +17,13 @@ function Register() {
             // Redirect to login on success
             navigate('/login');
         } catch (err) {
-            setError(err.response?.data?.error || 'Registration failed');
+            console.error("Registration Error:", err);
+            setError(
+                err.response?.data?.error ||
+                err.response?.data?.message ||
+                err.message ||
+                'Registration failed'
+            );
         }
     };
 
