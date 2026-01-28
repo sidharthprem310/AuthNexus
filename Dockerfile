@@ -14,10 +14,11 @@ RUN npm run build
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install system dependencies (needed for Postgres)
+# Install system dependencies (needed for Postgres and MIME types)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    mime-support \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

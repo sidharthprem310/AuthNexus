@@ -20,6 +20,11 @@ def create_app(config_class=Config):
     app = Flask(__name__, static_url_path='/')
     app.config.from_object(config_class)
 
+    # Ensure correct MIME types (critical for Docker/Slim images)
+    import mimetypes
+    mimetypes.add_type('application/javascript', '.js')
+    mimetypes.add_type('text/css', '.css')
+
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
