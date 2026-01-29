@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 function Dashboard() {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const [userProfile, setUserProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showDropdown, setShowDropdown] = useState(false);
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
