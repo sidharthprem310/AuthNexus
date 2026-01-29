@@ -53,6 +53,7 @@ class User(db.Model):
             'email': self.email,
             'is_active': self.is_active,
             'is_locked': self.is_locked,
+            'is_mfa_enabled': self.is_mfa_enabled,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
