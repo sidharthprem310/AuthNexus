@@ -234,6 +234,95 @@ function Dashboard() {
                 </div>
             )}
 
+            {/* MFA Modal */}
+            {showMFAModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md border border-gray-700">
+                        <h3 className="text-xl font-bold text-white mb-4">
+                            {mfaData?.mode === 'disable' ? 'Disable MFA' : 'Setup MFA'}
+                        </h3>
+
+                        {mfaData?.mode === 'setup' && (
+                            <div className="space-y-4">
+                                <div className="flex justify-center bg-white p-4 rounded">
+                                    <QRCodeCanvas value={mfaData.provisioning_uri} size={200} />
+                                </div>
+                                <p className="text-sm text-gray-400 text-center">Scan this QR code with your authenticator app.</p>
+                                <form onSubmit={handleEnableMFA} className="space-y-4">
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                        placeholder="Enter OTP Code"
+                                        required
+                                    />
+                                    <div className="flex justify-end space-x-2">
+                                        <button type="button" onClick={() => setShowMFAModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                                        <button type="submit" className="px-4 py-2 bg-green-600 rounded text-white hover:bg-green-700">Enable MFA</button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {mfaData?.mode === 'disable' && (
+                            <form onSubmit={handleDisableMFA} className="space-y-4">
+                                <p className="text-gray-300">Enter your password to disable MFA.</p>
+                                <input
+                                    type="password"
+                                    value={formData.currentPassword}
+                                    onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                    placeholder="Current Password"
+                                    required
+                                />
+                                <div className="flex justify-end space-x-2">
+                                    <button type="button" onClick={() => setShowMFAModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                                    <button type="submit" className="px-4 py-2 bg-red-600 rounded text-white hover:bg-red-700">Disable MFA</button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Logs Modal */}
+            {showLogsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 p-6 rounded-lg w-full max-w-4xl border border-gray-700 max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-white">Audit Logs</h3>
+                            <button onClick={() => setShowLogsModal(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-400">
+                                <thead className="bg-gray-700 text-gray-200 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-2">Event</th>
+                                        <th className="px-4 py-2">Details</th>
+                                        <th className="px-4 py-2">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {logs.map(log => (
+                                        <tr key={log.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                                            <td className="px-4 py-2 font-medium text-white">{log.event_name}</td>
+                                            <td className="px-4 py-2">{log.details || '-'}</td>
+                                            <td className="px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                    {logs.length === 0 && (
+                                        <tr>
+                                            <td colSpan="3" className="px-4 py-4 text-center">No logs found...</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content */}
             <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
 
