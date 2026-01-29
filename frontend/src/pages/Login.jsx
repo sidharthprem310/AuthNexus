@@ -29,7 +29,7 @@ function Login() {
             } else {
                 // Success
                 login(res.data.access_token);
-                const from = location.state?.from?.pathname || '/';
+                const from = location.state?.from?.pathname || '/dashboard';
                 navigate(from, { replace: true });
             }
         } catch (err) {

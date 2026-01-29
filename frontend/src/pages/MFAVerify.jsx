@@ -30,7 +30,7 @@ function MFAVerify() {
             });
 
             login(res.data.access_token);
-            const from = location.state?.from?.pathname || '/';
+            const from = location.state?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
         } catch (err) {
             setError(err.response?.data?.error || 'Verification failed');
