@@ -5,14 +5,14 @@ function Welcome() {
     return (
         <div className="min-h-screen bg-gray-900 text-white flex flex-col">
             {/* Navbar */}
-            <nav className="flex justify-between items-center p-6 border-b border-gray-800">
+            <nav className="flex flex-col md:flex-row justify-between items-center p-6 border-b border-gray-800 space-y-4 md:space-y-0">
                 <div className="flex items-center space-x-3">
                     <img src="/logo.png" alt="AuthNexus Logo" className="h-10 w-10 object-contain" />
                     <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
                         AuthNexus
                     </h1>
                 </div>
-                <div className="space-x-4">
+                <div className="flex space-x-4">
                     <Link to="/login" className="px-5 py-2 text-sm font-medium text-gray-300 hover:text-white transition">
                         Login
                     </Link>

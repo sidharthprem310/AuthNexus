@@ -9,6 +9,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import CreatePassword from './pages/CreatePassword';
 import Footer from './components/Footer';
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -35,42 +37,44 @@ function Dashboard() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="flex flex-col min-h-screen text-white bg-gray-900 font-sans">
-          <div className="flex-grow">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Welcome />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/create-password" element={<CreatePassword />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="flex flex-col min-h-screen text-white bg-gray-900 font-sans">
+            <div className="flex-grow">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Welcome />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/create-password" element={<CreatePassword />} />
 
-              {/* Auth Routes */}
-              <Route path="/mfa-verify" element={<MFAVerify />} />
-              <Route
-                path="/oauth/authorize"
-                element={
-                  <ProtectedRoute>
-                    <OAuthConsent />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
+                {/* Auth Routes */}
+                <Route path="/mfa-verify" element={<MFAVerify />} />
+                <Route
+                  path="/oauth/authorize"
+                  element={
+                    <ProtectedRoute>
+                      <OAuthConsent />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
-      </BrowserRouter>
-    </AuthProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
