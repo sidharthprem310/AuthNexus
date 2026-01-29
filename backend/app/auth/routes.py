@@ -365,3 +365,17 @@ def update_security():
     db.session.commit()
     
     return jsonify({'message': 'Password updated successfully'}), 200
+
+@bp.route('/logs', methods=['GET'])
+@jwt_required()
+def get_audit_logs():
+    """Get User Audit Logs"""
+    from flask_jwt_extended import get_jwt_identity
+    from app.models.audit_log import AuditLog
+    
+    user_id = get_jwt_identity()
+    
+    # Fetch last 20 logs
+    logs = AuditLog.query.filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(20).all()
+    
+    return jsonify([log.to_dict() for log in logs]), 200
