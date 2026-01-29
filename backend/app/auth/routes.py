@@ -5,6 +5,8 @@ from datetime import datetime
 from app import db, limiter
 from app.models.user import User
 from app.utils.audit import log_audit_event
+from app.models.device import UserDevice
+from flask_jwt_extended import decode_token
 from email_validator import validate_email, EmailNotValidError
 
 @bp.route('/register', methods=['POST'])
@@ -126,6 +128,20 @@ def login():
         return jsonify({'mfa_required': True, 'mfa_token': temp_token}), 200
 
     access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
+    
+    # Track Device
+    decoded_token = decode_token(access_token)
+    jti = decoded_token['jti']
+    
+    device = UserDevice(
+        user_id=user.id,
+        session_token=jti,
+        ip_address=request.remote_addr,
+        device_name=request.user_agent.string
+    )
+    db.session.add(device)
+    db.session.commit()
+    
     return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200
 
 @bp.route('/verify-2fa', methods=['POST'])
@@ -163,6 +179,20 @@ def verify_2fa():
         
     # Success - Issue full token
     access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
+    
+    # Track Device
+    decoded_token = decode_token(access_token)
+    jti = decoded_token['jti']
+    
+    device = UserDevice(
+        user_id=user.id,
+        session_token=jti,
+        ip_address=request.remote_addr,
+        device_name=request.user_agent.string
+    )
+    db.session.add(device)
+    db.session.commit()
+    
     return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200
 
 @bp.route('/verify-recovery-code', methods=['POST'])
@@ -190,11 +220,28 @@ def verify_recovery_code():
             valid_code_found = rc
             break
             
-    if valid_code_found:
-        valid_code_found.is_used = True
-        db.session.commit()
-        access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
-        return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200
+        if valid_rc:
+            valid_rc.is_used = True
+            db.session.commit()
+            log_audit_event('login_recovery_code_used', user_id=user.id, details="Used backup code")
+            
+            # Issue full token
+            access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
+            
+            # Track Device
+            decoded_token = decode_token(access_token)
+            jti = decoded_token['jti']
+            
+            device = UserDevice(
+                user_id=user.id,
+                session_token=jti,
+                ip_address=request.remote_addr,
+                device_name=request.user_agent.string
+            )
+            db.session.add(device)
+            db.session.commit()
+            
+            return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200
         
     return jsonify({'error': 'Invalid or used recovery code'}), 400
 

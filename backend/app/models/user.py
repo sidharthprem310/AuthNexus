@@ -25,6 +25,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     recovery_codes = db.relationship('RecoveryCode', back_populates='user', lazy=True)
+    devices = db.relationship('UserDevice', back_populates='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')

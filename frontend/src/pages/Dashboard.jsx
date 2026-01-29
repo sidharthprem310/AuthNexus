@@ -19,6 +19,7 @@ function Dashboard() {
     const [mfaData, setMfaData] = useState(null);
     const [otp, setOtp] = useState('');
     const [logs, setLogs] = useState([]);
+    const [devices, setDevices] = useState([]);
     const [formData, setFormData] = useState({ email: '', currentPassword: '', newPassword: '' });
     const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -131,6 +132,32 @@ function Dashboard() {
             setMessage({ type: 'error', text: 'Failed to fetch logs' });
         }
     };
+
+    const fetchDevices = async () => {
+        try {
+            const res = await axios.get('/auth/devices');
+            setDevices(res.data);
+        } catch (err) {
+            console.error("Failed to fetch devices");
+        }
+    };
+
+    const handleRevokeDevice = async (deviceId) => {
+        try {
+            await axios.delete(`/auth/devices/${deviceId}`);
+            setMessage({ type: 'success', text: 'Device revoked' });
+            fetchDevices();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Failed to revoke device' });
+        }
+    };
+
+    // Fetch devices when logs modal opens or just on load?
+    // Let's fetch on load for the card summary, or just fetch when we want to show detailed list.
+    // For now, let's fetch on load to show count.
+    useEffect(() => {
+        if (!loading) fetchDevices();
+    }, [loading]);
 
     if (loading) {
         return (
@@ -447,9 +474,32 @@ function Dashboard() {
                         <p className="text-sm text-gray-400 mb-4">
                             Monitor your active sessions and login history.
                         </p>
-                        <div className="text-xs text-gray-500 bg-gray-900/50 p-3 rounded-lg mb-3">
-                            <p>Current Session: <span className="text-green-400">Active</span></p>
-                            <p>Last Login: {new Date().toLocaleDateString()}</p>
+                        <div className="text-xs text-gray-500 bg-gray-900/50 p-3 rounded-lg mb-3 max-h-40 overflow-y-auto">
+                            {devices.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {devices.map(device => (
+                                        <li key={device.id} className="flex justify-between items-center border-b border-gray-700 pb-1 last:border-0">
+                                            <div>
+                                                <p className={`font-bold ${device.is_current ? 'text-green-400' : 'text-gray-300'}`}>
+                                                    {device.device_name ? (device.device_name.length > 20 ? device.device_name.substring(0, 20) + '...' : device.device_name) : 'Unknown Device'}
+                                                    {device.is_current && ' (Current)'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500">{new Date(device.last_active).toLocaleString()}</p>
+                                            </div>
+                                            {!device.is_current && (
+                                                <button
+                                                    onClick={() => handleRevokeDevice(device.id)}
+                                                    className="text-red-400 hover:text-red-300 text-xs px-2"
+                                                >
+                                                    Revoke
+                                                </button>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No active sessions found.</p>
+                            )}
                         </div>
                         <button
                             onClick={handleViewLogs}

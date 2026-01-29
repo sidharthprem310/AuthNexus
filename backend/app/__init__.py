@@ -66,12 +66,20 @@ def create_app(config_class=Config):
     app.register_blueprint(mfa_bp, url_prefix='/mfa')
 
     from app.oauth import bp as oauth_bp
+    from app.oauth import bp as oauth_bp
     app.register_blueprint(oauth_bp, url_prefix='/oauth')
+
+    from app.auth.device_routes import get_devices
+    # Since device_routes is part of 'auth' bp, it's already registered via auth_bp.
+    # But wait, I created a separate file. I need to make sure 'create_app' imports it
+    # so the routes are registered to the blueprint.
+    import app.auth.device_routes
 
     # Ensure models are imported
     from app.models.user import User
     from app.models.recovery_code import RecoveryCode
     from app.models.audit_log import AuditLog
+    from app.models.device import UserDevice
     from app.models.oauth import OAuthClient, OAuthAuthCode
 
     return app
