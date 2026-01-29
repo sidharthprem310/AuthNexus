@@ -316,3 +316,52 @@ def get_current_user():
         return jsonify({'error': 'User not found'}), 404
         
     return jsonify(user.to_dict()), 200
+
+@bp.route('/account', methods=['PUT'])
+@jwt_required()
+def update_account():
+    """Update User Profile (Email/Username)"""
+    from flask_jwt_extended import get_jwt_identity
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    data = request.get_json()
+    new_email = data.get('email')
+    
+    if not new_email:
+        return jsonify({'error': 'Email is required'}), 400
+        
+    if user.email == new_email:
+        return jsonify({'message': 'No changes made'}), 200
+        
+    # Check uniqueness
+    if User.query.filter_by(email=new_email).first():
+        return jsonify({'error': 'Email already taken'}), 409
+        
+    user.email = new_email
+    db.session.commit()
+    
+    return jsonify({'message': 'Profile updated successfully', 'user': user.to_dict()}), 200
+
+@bp.route('/security', methods=['PUT'])
+@jwt_required()
+def update_security():
+    """Update Password"""
+    from flask_jwt_extended import get_jwt_identity
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    data = request.get_json()
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    
+    if not current_password or not new_password:
+        return jsonify({'error': 'Current and new password required'}), 400
+        
+    if not user.check_password(current_password):
+        return jsonify({'error': 'Incorrect current password'}), 401
+        
+    user.set_password(new_password)
+    db.session.commit()
+    
+    return jsonify({'message': 'Password updated successfully'}), 200
