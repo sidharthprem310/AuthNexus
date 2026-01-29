@@ -25,16 +25,10 @@ def create_app(config_class=Config):
     mimetypes.add_type('application/javascript', '.js')
     mimetypes.add_type('text/css', '.css')
 
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve(path):
+    @app.errorhandler(404)
+    def not_found(e):
         from flask import send_from_directory
-        import os
-        
-        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        else:
-            return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(app.static_folder, 'index.html')
 
     db.init_app(app)
     migrate.init_app(app, db)
