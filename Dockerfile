@@ -38,4 +38,5 @@ ENV FLASK_ENV=production
 EXPOSE 5000
 
 # Run Command
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--chdir", "backend", "run:app"]
+# Run Command (Migrate DB then Start Server)
+CMD ["sh", "-c", "cd backend && flask db upgrade && gunicorn -w 4 -b 0.0.0.0:5000 run:app"]
