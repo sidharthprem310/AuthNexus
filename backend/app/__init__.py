@@ -28,11 +28,13 @@ def create_app(config_class=Config):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
+        from flask import send_from_directory
         import os
-        # Normalize path to prevent directory traversal and handle slashes
+        
         if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-            return app.send_static_file(path)
-        return app.send_static_file('index.html')
+            return send_from_directory(app.static_folder, path)
+        else:
+            return send_from_directory(app.static_folder, 'index.html')
 
     db.init_app(app)
     migrate.init_app(app, db)
