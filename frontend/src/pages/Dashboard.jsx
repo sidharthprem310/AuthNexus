@@ -14,6 +14,8 @@ function Dashboard() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showMFAModal, setShowMFAModal] = useState(false);
     const [showLogsModal, setShowLogsModal] = useState(false);
+    const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+    const [recoveryCodes, setRecoveryCodes] = useState([]);
     const [mfaData, setMfaData] = useState(null);
     const [otp, setOtp] = useState('');
     const [logs, setLogs] = useState([]);
@@ -107,6 +109,16 @@ function Dashboard() {
             setUserProfile(res.data);
         } catch (err) {
             setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to disable MFA' });
+        }
+    };
+
+    const handleGenerateRecoveryCodes = async () => {
+        try {
+            const res = await axios.post('/mfa/recovery-codes');
+            setRecoveryCodes(res.data.codes);
+            setShowRecoveryModal(true);
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Failed to generate recovery codes' });
         }
     };
 
@@ -292,6 +304,42 @@ function Dashboard() {
                 </div>
             )}
 
+            {/* Recovery Codes Modal */}
+            {showRecoveryModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md border border-gray-700 text-center">
+                        <h3 className="text-xl font-bold text-white mb-2">Recovery Codes</h3>
+                        <p className="text-sm text-red-400 mb-4 bg-red-900/20 p-2 rounded">
+                            SAVE THESE CODES! They will not be shown again.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 mb-6">
+                            {recoveryCodes.map((code, index) => (
+                                <div key={index} className="bg-gray-900 p-2 rounded border border-gray-700 font-mono text-green-400 tracking-widest">
+                                    {code}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex justify-center space-x-2">
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(recoveryCodes.join('\\n'));
+                                    setMessage({ type: 'success', text: 'Codes copied to clipboard' });
+                                }}
+                                className="px-4 py-2 bg-blue-600 rounded text-white hover:bg-blue-700"
+                            >
+                                Copy All
+                            </button>
+                            <button
+                                onClick={() => setShowRecoveryModal(false)}
+                                className="px-4 py-2 bg-gray-600 rounded text-white hover:bg-gray-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Logs Modal */}
             {showLogsModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -379,6 +427,14 @@ function Dashboard() {
                             >
                                 {userProfile?.is_mfa_enabled ? 'Manage MFA' : 'Setup MFA'}
                             </button>
+                            {userProfile?.is_mfa_enabled && (
+                                <button
+                                    onClick={handleGenerateRecoveryCodes}
+                                    className="w-full py-2 text-sm font-medium text-white bg-gray-700 rounded hover:bg-gray-600 transition"
+                                >
+                                    Generate Recovery Codes
+                                </button>
+                            )}
                         </div>
                     </div>
 

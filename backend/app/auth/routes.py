@@ -146,7 +146,20 @@ def verify_2fa():
         return jsonify({'error': 'OTP required'}), 400
         
     if not user.verify_totp(otp):
-        return jsonify({'error': 'Invalid OTP'}), 400
+        # Fallback: Check Recovery Codes
+        # This allows users to enter a recovery code in the same field as the OTP
+        valid_rc = None
+        for rc in user.recovery_codes:
+            if not rc.is_used and rc.check_code(otp):
+                valid_rc = rc
+                break
+        
+        if valid_rc:
+            valid_rc.is_used = True
+            db.session.commit()
+            log_audit_event('login_recovery_code_used', user_id=user.id, details="Used backup code")
+        else:
+            return jsonify({'error': 'Invalid OTP or Recovery Code'}), 400
         
     # Success - Issue full token
     access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
