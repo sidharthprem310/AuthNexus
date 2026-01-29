@@ -43,6 +43,28 @@ def create_app(config_class=Config):
     limiter.init_app(app)
     swagger.init_app(app)
 
+    @app.route('/debug-files')
+    def debug_files():
+        import os
+        debug_info = {
+            "static_folder": app.static_folder,
+            "root_path": app.root_path,
+            "cwd": os.getcwd(),
+            "static_files": [],
+            "root_files": []
+        }
+        try:
+            debug_info["static_files"] = os.listdir(app.static_folder)
+        except Exception as e:
+            debug_info["static_files"] = str(e)
+            
+        try:
+            debug_info["root_files"] = os.listdir(app.root_path)
+        except Exception as e:
+            debug_info["root_files"] = str(e)
+            
+        return debug_info
+
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
