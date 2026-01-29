@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
 
 function Dashboard() {
     const { logout } = useAuth();
@@ -9,6 +10,11 @@ function Dashboard() {
     const [showDropdown, setShowDropdown] = useState(false);
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [showMFAModal, setShowMFAModal] = useState(false);
+    const [showLogsModal, setShowLogsModal] = useState(false);
+    const [mfaData, setMfaData] = useState(null);
+    const [otp, setOtp] = useState('');
+    const [logs, setLogs] = useState([]);
     const [formData, setFormData] = useState({ email: '', currentPassword: '', newPassword: '' });
     const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -56,6 +62,59 @@ function Dashboard() {
             setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
         } catch (err) {
             setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update password' });
+        }
+    };
+
+    const handleManageMFA = async () => {
+        if (userProfile?.is_mfa_enabled) {
+            setMfaData({ mode: 'disable' });
+            setShowMFAModal(true);
+        } else {
+            try {
+                const res = await axios.post('/mfa/setup');
+                setMfaData({ mode: 'setup', ...res.data });
+                setShowMFAModal(true);
+            } catch (err) {
+                setMessage({ type: 'error', text: 'Failed to start MFA setup' });
+            }
+        }
+    };
+
+    const handleEnableMFA = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/mfa/enable', { secret: mfaData.secret, otp });
+            setMessage({ type: 'success', text: 'MFA Enabled Successfully!' });
+            setShowMFAModal(false);
+            setOtp('');
+            const res = await axios.get('/auth/me');
+            setUserProfile(res.data);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Invalid OTP' });
+        }
+    };
+
+    const handleDisableMFA = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/mfa/disable', { password: formData.currentPassword });
+            setMessage({ type: 'success', text: 'MFA Disabled Successfully!' });
+            setShowMFAModal(false);
+            setFormData(prev => ({ ...prev, currentPassword: '' }));
+            const res = await axios.get('/auth/me');
+            setUserProfile(res.data);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to disable MFA' });
+        }
+    };
+
+    const handleViewLogs = async () => {
+        try {
+            const res = await axios.get('/auth/logs');
+            setLogs(res.data);
+            setShowLogsModal(true);
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Failed to fetch logs' });
         }
     };
 
@@ -219,8 +278,11 @@ function Dashboard() {
                                     {userProfile?.is_mfa_enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                             </div>
-                            <button className="w-full py-2 text-sm font-medium text-white bg-gray-700 rounded hover:bg-gray-600 transition">
-                                Manage MFA
+                            <button
+                                onClick={handleManageMFA}
+                                className="w-full py-2 text-sm font-medium text-white bg-gray-700 rounded hover:bg-gray-600 transition"
+                            >
+                                {userProfile?.is_mfa_enabled ? 'Manage MFA' : 'Setup MFA'}
                             </button>
                         </div>
                     </div>
@@ -238,7 +300,10 @@ function Dashboard() {
                             <p>Current Session: <span className="text-green-400">Active</span></p>
                             <p>Last Login: {new Date().toLocaleDateString()}</p>
                         </div>
-                        <button className="w-full py-2 text-sm font-medium text-white bg-gray-700 rounded hover:bg-gray-600 transition">
+                        <button
+                            onClick={handleViewLogs}
+                            className="w-full py-2 text-sm font-medium text-white bg-gray-700 rounded hover:bg-gray-600 transition"
+                        >
                             View Logs
                         </button>
                     </div>
