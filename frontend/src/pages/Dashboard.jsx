@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { QRCodeCanvas } from 'qrcode.react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Dashboard() {
     const { logout } = useAuth();
@@ -245,7 +246,11 @@ function Dashboard() {
                         {mfaData?.mode === 'setup' && (
                             <div className="space-y-4">
                                 <div className="flex justify-center bg-white p-4 rounded">
-                                    <QRCodeCanvas value={mfaData.provisioning_uri} size={200} />
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mfaData.provisioning_uri)}`}
+                                        alt="MFA QR Code"
+                                        className="h-48 w-48"
+                                    />
                                 </div>
                                 <p className="text-sm text-gray-400 text-center">Scan this QR code with your authenticator app.</p>
                                 <form onSubmit={handleEnableMFA} className="space-y-4">
