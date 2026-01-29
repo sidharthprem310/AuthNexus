@@ -11,6 +11,8 @@ import Footer from './components/Footer';
 
 import ErrorBoundary from './components/ErrorBoundary';
 
+import Dashboard from './pages/Dashboard';
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -22,17 +24,6 @@ function ProtectedRoute({ children }) {
   }
 
   return children;
-}
-
-function Dashboard() {
-  const { user, logout } = useAuth();
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-      <p className="mb-4">Welcome, <span className="font-mono text-blue-400">{user.sub}</span></p>
-      <button onClick={logout} className="px-4 py-2 bg-red-600 rounded hover:bg-red-700">Logout</button>
-    </div>
-  );
 }
 
 function App() {

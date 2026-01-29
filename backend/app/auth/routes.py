@@ -291,3 +291,28 @@ def reset_password():
     db.session.commit()
     
     return jsonify({'message': 'Password updated successfully'}), 200
+
+@bp.route('/me', methods=['GET'])
+@jwt_required()
+def get_current_user():
+    """
+    Get Current User Details
+    ---
+    tags:
+      - Auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Current user profile
+      401:
+        description: Unauthorized
+    """
+    from flask_jwt_extended import get_jwt_identity
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    return jsonify(user.to_dict()), 200
