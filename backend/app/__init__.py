@@ -77,6 +77,7 @@ def create_app(config_class=Config):
     from app.models.recovery_code import RecoveryCode
     from app.models.audit_log import AuditLog
     from app.models.device import UserDevice
+    from app.models.magic_link import MagicLink
     from app.models.oauth import OAuthClient, OAuthAuthCode
 
     return app

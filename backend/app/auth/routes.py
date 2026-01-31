@@ -7,6 +7,9 @@ from app.models.user import User
 from app.utils.audit import log_audit_event
 from app.models.device import UserDevice
 from flask_jwt_extended import decode_token
+from app.models.device import UserDevice
+from app.models.magic_link import MagicLink
+from flask_jwt_extended import decode_token
 from email_validator import validate_email, EmailNotValidError
 
 @bp.route('/register', methods=['POST'])
@@ -439,3 +442,111 @@ def get_audit_logs():
     logs = AuditLog.query.filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(20).all()
     
     return jsonify([log.to_dict() for log in logs]), 200
+
+@bp.route('/magic-link', methods=['POST'])
+@limiter.limit("3 per minute")
+def request_magic_link():
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+        
+    user = User.query.filter_by(email=email).first()
+    
+    # Always return success to prevent enumeration, but log if user exists
+    if not user:
+        # Simulate delay
+        import time
+        time.sleep(1)
+        return jsonify({'message': 'If an account exists, a magic link has been sent.'}), 200
+        
+    # Generate Token
+    raw_token = MagicLink.generate_token()
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    
+    magic_link = MagicLink(
+        user_id=user.id,
+        expires_at=expires
+    )
+    magic_link.set_token(raw_token)
+    db.session.add(magic_link)
+    db.session.commit()
+    
+    # Construct Link (Frontend Route)
+    # Using request.host_url implies backend URL, assuming frontend is served there causing mixed content?
+    # No, usually we want the Frontend URL.
+    # For now, let's assume relative path /magic-login if same origin, or env var.
+    # We'll use a hardcoded safe default or derived from host for now.
+    link = f"{request.host_url.rstrip('/')}/magic-login?token={raw_token}&email={email}"
+    
+    # In production, send via SMTP
+    print(f"========================================")
+    print(f"MAGIC LINK for {email}: {link}")
+    print(f"========================================")
+    
+    log_audit_event('magic_link_requested', user_id=user.id)
+    
+    return jsonify({'message': 'If an account exists, a magic link has been sent.'}), 200
+
+@bp.route('/magic-login', methods=['POST'])
+@limiter.limit("5 per minute")
+def verify_magic_link():
+    data = request.get_json()
+    email = data.get('email')
+    token = data.get('token')
+    
+    if not email or not token:
+        return jsonify({'error': 'Email and token required'}), 400
+        
+    user = User.query.filter_by(email=email).first()
+    if not user:
+         return jsonify({'error': 'Invalid request'}), 400
+         
+    # Check valid links
+    valid_link = None
+    # We have to check all active links for this user... actually iterate?
+    # Since we only store hash, we iterate active unused links.
+    
+    active_links = MagicLink.query.filter_by(user_id=user.id, is_used=False).filter(MagicLink.expires_at > datetime.utcnow()).all()
+    
+    for ml in active_links:
+        if ml.check_token(token):
+            valid_link = ml
+            break
+            
+    if not valid_link:
+        return jsonify({'error': 'Invalid or expired magic link'}), 400
+        
+    # Mark used
+    valid_link.is_used = True
+    
+    # Check MFA?
+    # Magic link is usually ALREADY powerful. 
+    # But if MFA is strictly required, we might still ask for it?
+    # For "Passwordless" login, it usually REPLACES password.
+    # If MFA is enabled, we should probably issue a PRE-AUTH token like normal login.
+    
+    db.session.commit()
+    log_audit_event('magic_link_used', user_id=user.id)
+    
+    if user.is_mfa_enabled:
+        temp_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': True})
+        return jsonify({'mfa_required': True, 'mfa_token': temp_token}), 200
+        
+    # Success - Issue full token & Track Device
+    access_token = create_access_token(identity=user.id, additional_claims={'is_pre_auth': False})
+    
+    decoded_token = decode_token(access_token)
+    jti = decoded_token['jti']
+    
+    device = UserDevice(
+        user_id=user.id,
+        session_token=jti,
+        ip_address=request.remote_addr,
+        device_name=request.user_agent.string
+    )
+    db.session.add(device)
+    db.session.commit()
+    
+    return jsonify({'access_token': access_token, 'user': user.to_dict()}), 200

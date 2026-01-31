@@ -7,6 +7,7 @@ import OAuthConsent from './pages/OAuthConsent';
 import Welcome from './pages/Welcome';
 import ForgotPassword from './pages/ForgotPassword';
 import CreatePassword from './pages/CreatePassword';
+import MagicLogin from './pages/MagicLogin';
 import Footer from './components/Footer';
 
 import ErrorBoundary from './components/ErrorBoundary';
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/create-password" element={<CreatePassword />} />
+                <Route path="/magic-login" element={<MagicLogin />} />
 
                 {/* Auth Routes */}
                 <Route path="/mfa-verify" element={<MFAVerify />} />
