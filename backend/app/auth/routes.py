@@ -1,14 +1,14 @@
 from flask import jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.auth import bp
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db, limiter
 from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.utils.audit import log_audit_event
+from app.utils.alerts import send_security_alert
 from app.models.device import UserDevice
-from flask_jwt_extended import decode_token
-from app.models.device import UserDevice
-from app.models.magic_link import MagicLink
+from app.models.blocklist import BlockedIP
 from flask_jwt_extended import decode_token
 from email_validator import validate_email, EmailNotValidError
 
@@ -113,6 +113,22 @@ def login():
         user.last_failed_login = datetime.utcnow()
         db.session.commit()
         log_audit_event('login_failed', user_id=user.id, details=f"Attempts: {user.failed_login_attempts}")
+        
+        # IP Tracking for Auto-Ban (Simple Counter in memory or DB check)
+        # For MVP, if user fails 5 times, also block IP? Or separate logic?
+        # Let's simple check: if user fails loop, check if last 5 failures were from same IP?
+        # Easier: Just track specific to this request IP if simple DOS
+        
+        # Real logic: Query audit logs for recent failures from this IP
+        ip = request.remote_addr
+        recent_failures = AuditLog.query.filter_by(ip_address=ip, event_name='login_failed').filter(AuditLog.timestamp > datetime.utcnow() - timedelta(minutes=10)).count()
+        
+        if recent_failures >= 10:
+             blocked = BlockedIP(ip_address=ip, reason="Auto-ban: Too many failed logins")
+             db.session.add(blocked)
+             db.session.commit()
+             send_security_alert(user, "IP_BANNED", f"IP {ip} banned due to brute force")
+             
         return jsonify({'error': 'Invalid credentials'}), 401
 
     if not user.is_active:

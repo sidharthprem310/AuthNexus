@@ -15,6 +15,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuditLogs from './pages/AdminAuditLogs';
+import AdminBlockedIps from './pages/AdminBlockedIps';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -76,6 +77,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AdminAuditLogs />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/blocked-ips"
+                  element={
+                    <ProtectedRoute>
+                      <AdminBlockedIps />
                     </ProtectedRoute>
                   }
                 />

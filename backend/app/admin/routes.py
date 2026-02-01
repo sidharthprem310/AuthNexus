@@ -5,23 +5,16 @@ from app.models.audit_log import AuditLog
 from app.models.blocklist import BlockedIP
 from app.models.device import UserDevice
 from app import db
+from functools import wraps
 
 bp = Blueprint('admin', __name__)
-
-# Basic Admin Decorator (mock logic for now, or check explicit 'is_admin' field)
-from functools import wraps
 
 def admin_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        # In a real app, check User.role == 'admin'
-        # For this MVP, let's hardcode a specific email or just allow any auth user for demo 
-        # (BUT warn the user).
-        # Better: let's assume the first registered user is admin, or check a list.
-        # Let's check if email contains 'admin' for demo purposes.
         current_user_id = get_jwt_identity()
         user = User.query.get(current_user_id)
-        if not user or 'admin' not in user.email.lower():  # Simple rule for demo
+        if not user or not user.is_admin:
              return jsonify({'error': 'Admin access required'}), 403
         return fn(*args, **kwargs)
     return wrapper
@@ -34,7 +27,7 @@ def get_stats():
     mfa_enabled_count = User.query.filter_by(is_mfa_enabled=True).count()
     blocked_ips_count = BlockedIP.query.count()
     
-    # Recent alerts (Audit logs starting with ALERT_)
+    # Recent alerts
     recent_alerts = AuditLog.query.filter(AuditLog.event_name.like('ALERT_%')).order_by(AuditLog.timestamp.desc()).limit(10).all()
     
     return jsonify({
@@ -48,6 +41,37 @@ def get_stats():
         'recent_alerts': [log.to_dict() for log in recent_alerts]
     }), 200
 
+@bp.route('/audit-logs', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_all_audit_logs():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    pagination = AuditLog.query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    logs = [log.to_dict() for log in pagination.items]
+    
+    return jsonify({
+        'logs': logs,
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
+
+@bp.route('/blocked-ips', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_blocked_ips():
+    blocked = BlockedIP.query.order_by(BlockedIP.blocked_at.desc()).all()
+    return jsonify([{
+        'id': b.id,
+        'ip_address': b.ip_address,
+        'reason': b.reason,
+        'blocked_at': b.blocked_at.isoformat(),
+        'expires_at': b.expires_at.isoformat() if b.expires_at else None
+    } for b in blocked]), 200
+
 @bp.route('/block-ip', methods=['POST'])
 @jwt_required()
 @admin_required
@@ -59,7 +83,6 @@ def block_ip():
     if not ip:
         return jsonify({'error': 'IP required'}), 400
         
-    # Check if already blocked
     if BlockedIP.query.filter_by(ip_address=ip).first():
         return jsonify({'message': 'IP already blocked'}), 200
         
@@ -68,3 +91,16 @@ def block_ip():
     db.session.commit()
     
     return jsonify({'message': f'IP {ip} blocked successfully'}), 200
+
+@bp.route('/blocked-ips/<ip>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def unblock_ip(ip):
+    blocked = BlockedIP.query.filter_by(ip_address=ip).first()
+    if not blocked:
+        return jsonify({'error': 'IP not found'}), 404
+        
+    db.session.delete(blocked)
+    db.session.commit()
+    
+    return jsonify({'message': f'IP {ip} unblocked successfully'}), 200
