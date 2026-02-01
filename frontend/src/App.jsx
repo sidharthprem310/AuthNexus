@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuditLogs from './pages/AdminAuditLogs';
 import AdminBlockedIps from './pages/AdminBlockedIps';
+import AdminUsers from './pages/AdminUsers';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -85,6 +86,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AdminBlockedIps />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedRoute>
+                      <AdminUsers />
                     </ProtectedRoute>
                   }
                 />

@@ -60,7 +60,11 @@ function AdminDashboard() {
                     <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white">Back to App</button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-750 transition" onClick={() => navigate('/admin/users')}>
+                        <h3 className="text-gray-400 text-sm uppercase">Manage Users</h3>
+                        <p className="text-3xl font-bold text-blue-400 mt-2">👥</p>
+                    </div>
                     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                         <h3 className="text-gray-400 text-sm uppercase">Total Users</h3>
                         <p className="text-3xl font-bold text-white mt-2">{stats?.users?.total}</p>

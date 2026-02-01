@@ -4,6 +4,8 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.blocklist import BlockedIP
 from app.models.device import UserDevice
+from app.utils.audit import log_audit_event
+from app.utils.alerts import send_security_alert
 from app import db
 from functools import wraps
 
@@ -104,3 +106,52 @@ def unblock_ip(ip):
     db.session.commit()
     
     return jsonify({'message': f'IP {ip} unblocked successfully'}), 200
+
+@bp.route('/users', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_users():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    pagination = User.query.order_by(User.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    users = [user.to_dict() for user in pagination.items]
+    
+    return jsonify({
+        'users': users,
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
+
+@bp.route('/users/<user_id>/lock', methods=['POST'])
+@jwt_required()
+@admin_required
+def lock_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    user.is_locked = True
+    db.session.commit()
+    
+    log_audit_event('admin_lock_user', user_id=user.id, details=f"Locked by admin")
+    
+    return jsonify({'message': f'User {user.email} locked successfully'}), 200
+
+@bp.route('/users/<user_id>/unlock', methods=['POST'])
+@jwt_required()
+@admin_required
+def unlock_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    user.is_locked = False
+    user.failed_login_attempts = 0 # Reset counters
+    db.session.commit()
+    
+    log_audit_event('admin_unlock_user', user_id=user.id, details=f"Unlocked by admin")
+    
+    return jsonify({'message': f'User {user.email} unlocked successfully'}), 200
