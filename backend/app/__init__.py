@@ -66,6 +66,9 @@ def create_app(config_class=Config):
     from app.auth import device_routes
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
+    from app.admin.routes import bp as admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+
     from app.mfa import bp as mfa_bp
     app.register_blueprint(mfa_bp, url_prefix='/mfa')
 
@@ -78,6 +81,11 @@ def create_app(config_class=Config):
     from app.models.audit_log import AuditLog
     from app.models.device import UserDevice
     from app.models.magic_link import MagicLink
+    from app.models.blocklist import BlockedIP
     from app.models.oauth import OAuthClient, OAuthAuthCode
+
+    # Register Middleware
+    from app.middleware.security import check_ip_ban
+    app.before_request(check_ip_ban)
 
     return app

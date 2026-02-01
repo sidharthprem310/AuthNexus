@@ -9,6 +9,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(128), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
     is_locked = db.Column(db.Boolean, default=False)
     mfa_secret = db.Column(db.String(32), nullable=True)
     is_mfa_enabled = db.Column(db.Boolean, default=False)
@@ -52,6 +53,7 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'is_active': self.is_active,
+            'is_admin': self.is_admin,
             'is_locked': self.is_locked,
             'is_mfa_enabled': self.is_mfa_enabled,
             'created_at': self.created_at.isoformat(),

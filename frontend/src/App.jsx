@@ -13,6 +13,8 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminAuditLogs from './pages/AdminAuditLogs';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -58,6 +60,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/audit-logs"
+                  element={
+                    <ProtectedRoute>
+                      <AdminAuditLogs />
                     </ProtectedRoute>
                   }
                 />
